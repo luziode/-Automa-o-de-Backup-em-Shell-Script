@@ -1,0 +1,42 @@
+backup.sh
+#!/usr/bin/env bash
+
+# Configurações de segurança do Shell
+set -euo pipefail
+
+# Variáveis (Altere os caminhos conforme sua necessidade)
+DIRETORIO_ORIGEM="$HOME/documentos"
+DIRETORIO_DESTINO="/backup"
+DATA=$(date +%Y-%m-%d_%H-%M-%S)
+NOME_ARQUIVO="backup_$DATA.tar.gz"
+LOG_ARQUIVO="$DIRETORIO_DESTINO/backup.log"
+RETENCAO_DIAS=7
+
+# Função de Log
+logar() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_ARQUIVO"
+}
+
+# Validações iniciais
+if [[ ! -d "$DIRETORIO_ORIGEM" ]]; then
+    echo "Erro: Diretório de origem não existe." >&2
+    exit 1
+fi
+
+mkdir -p "$DIRETORIO_DESTINO"
+
+# Execução do Backup
+logar "Iniciando o backup de $DIRETORIO_ORIGEM..."
+
+if tar -czf "$DIRETORIO_DESTINO/$NOME_ARQUIVO" "$DIRETORIO_ORIGEM" 2>> "$LOG_ARQUIVO"; then
+    logar "Backup concluído com sucesso: $NOME_ARQUIVO"
+else
+    logar "ERRO: Falha ao criar o arquivo de backup."
+    exit 1
+fi
+
+# Limpeza de backups antigos (Retenção)
+logar "Removendo backups com mais de $RETENCAO_DIAS dias..."
+find "$DIRETORIO_DESTINO" -name "backup_*.tar.gz" -type f -mtime +"$RETENCAO_DIAS" -delete
+
+logar "Processo de backup finalizado."
